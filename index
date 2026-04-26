@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAT Simulation - NKRI & Wawasan Nusantara</title>
+    <style>
+        :root {
+            --primary: #c0392b;
+            --secondary: #2c3e50;
+            --success: #27ae60;
+            --warning: #f1c40f;
+            --danger: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .fade-in { animation: fadeIn 0.4s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Intro Screen */
+        #intro-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            max-width: 650px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-start { background: var(--primary); color: white; width: 100%; margin-top: 20px; font-size: 1.1rem; }
+        .btn-start:hover { background: #a93226; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(192, 57, 43, 0.3); }
+
+        /* Exam Screen */
+        #exam-screen { display: none; flex-direction: column; height: 100vh; }
+
+        header {
+            background: var(--secondary);
+            color: white;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .timer-badge {
+            background: #fff;
+            color: var(--danger);
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.4rem;
+            border: 2px solid var(--danger);
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            padding: 25px;
+            gap: 25px;
+            overflow: hidden;
+        }
+
+        @media (max-width: 850px) {
+            .main-content { flex-direction: column; overflow-y: auto; }
+            #exam-screen { height: auto; }
+        }
+
+        .question-card {
+            flex: 3;
+            background: white;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            padding: 35px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .question-text { font-size: 1.2rem; font-weight: 600; margin-bottom: 25px; color: #1a252f; }
+
+        .option-item {
+            display: flex;
+            padding: 15px;
+            margin-bottom: 12px;
+            border: 2px solid #e0e6ed;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .option-item:hover { background: #f8f9fa; border-color: var(--primary); }
+        .option-item.selected { background: #fdf2f2; border-color: var(--primary); font-weight: bold; }
+
+        /* Navigation Sidebar */
+        .nav-sidebar {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            max-height: 100%;
+            overflow-y: auto;
+        }
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .nav-num {
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            background: #fff;
+        }
+
+        .nav-num.answered { background: var(--success); color: white; border-color: var(--success); }
+        .nav-num.doubt { background: var(--warning); color: black; border-color: var(--warning); }
+        .nav-num.active { border: 3px solid var(--dark); font-weight: bold; }
+
+        .controls { display: flex; justify-content: space-between; margin-top: auto; padding-top: 30px; gap: 10px; }
+        .btn-nav { background: #95a5a6; color: white; flex: 1; }
+        .btn-finish { background: var(--success); color: white; flex: 1; }
+
+        #modal-overlay {
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;
+        }
+
+        #result-screen, #review-screen { display: none; padding: 40px 20px; }
+        .review-card { background: white; margin-bottom: 15px; padding: 20px; border-radius: 8px; border-left: 6px solid var(--primary); box-shadow: var(--shadow); }
+    </style>
+</head>
+<body>
+
+<div id="intro-screen" class="fade-in">
+    <div class="card">
+        <h1 style="color: var(--primary); margin-bottom: 10px;">Simulasi CAT TWK</h1>
+        <h2 style="color: var(--secondary); margin-bottom: 20px;">Materi: NKRI & Wawasan Nusantara</h2>
+        <div style="text-align: left; background: var(--light); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+            <strong>Petunjuk Pengerjaan:</strong>
+            <ul style="margin-left: 20px; margin-top: 10px; font-size: 0.95rem;">
+                <li>Jumlah Soal: 50 Butir</li>
+                <li>Waktu: 30 Menit</li>
+                <li>Passing Grade: Skor 65 (Benar 13 soal)</li>
+                <li>Klik nomor soal di samping untuk melompat soal</li>
+            </ul>
+        </div>
+        <button class="btn btn-start" onclick="startExam()">Mulai Simulasi Sekarang</button>
+    </div>
+</div>
+
+<div id="exam-screen">
+    <header>
+        <div>
+            <strong style="letter-spacing: 1px;">CAT SYSTEM V.2026</strong>
+            <div id="progress-header" style="font-size: 0.8rem; opacity: 0.9;">Memuat soal...</div>
+        </div>
+        <div class="timer-badge" id="timer">30:00</div>
+    </header>
+
+    <div class="main-content">
+        <div class="question-card fade-in">
+            <div style="color: var(--secondary); font-weight: bold; margin-bottom: 10px; font-size: 0.9rem;" id="q-label">SOAL</div>
+            <div class="question-text" id="q-text">Sedang memuat pertanyaan...</div>
+            <div id="options-container"></div>
+            
+            <div class="controls">
+                <button class="btn btn-nav" onclick="changeQuestion(-1)">Sebelumnya</button>
+                <button class="btn btn-nav" style="background: var(--warning); color: black;" onclick="markDoubt()">Ragu-Ragu</button>
+                <button class="btn btn-nav" id="btn-next" style="background: var(--secondary);" onclick="changeQuestion(1)">Selanjutnya</button>
+                <button class="btn btn-finish" id="btn-finish" style="display:none;" onclick="showConfirm()">Selesai Ujian</button>
+            </div>
+        </div>
+
+        <div class="nav-sidebar">
+            <h4 style="font-size: 0.9rem; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">Daftar Navigasi Soal</h4>
+            <div class="nav-grid" id="nav-grid"></div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-overlay">
+    <div class="card" style="max-width: 400px;">
+        <h3>Kirim Jawaban?</h3>
+        <p style="margin: 15px 0; color: #666;">Apakah Anda yakin ingin mengakhiri ujian ini dan melihat skor?</p>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-start" style="flex: 1;" onclick="finishExam()">Ya, Selesai</button>
+            <button class="btn btn-nav" style="flex: 1; background: #95a5a6;" onclick="hideConfirm()">Batal</button>
+        </div>
+    </div>
+</div>
+
+<div id="result-screen" class="fade-in">
+    <div class="card" style="margin: auto;">
+        <h2 id="status-tag">HASIL AKHIR</h2>
+        <div style="font-size: 5rem; font-weight: bold; margin: 15px 0; color: var(--primary);" id="score-text">0</div>
+        <p id="stats-detail" style="font-weight: 500; font-size: 1.1rem;"></p>
+        <div style="margin-top: 30px; display: flex; gap: 15px;">
+            <button class="btn btn-start" onclick="showReview()" style="margin:0; flex:1; background: var(--secondary);">Review Jawaban</button>
+            <button class="btn btn-nav" onclick="location.reload()" style="flex:1;">Ulangi Tes</button>
+        </div>
+    </div>
+</div>
+
+<div id="review-screen" class="fade-in">
+    <h1 style="margin-bottom: 30px; text-align: center; color: var(--secondary);">Review Pembahasan</h1>
+    <div id="review-content" style="max-width: 850px; margin: auto;"></div>
+    <center><button class="btn btn-start" onclick="location.reload()" style="margin: 40px; background: var(--secondary);">Selesai Review</button></center>
+</div>
+
+<script>
+    const questions = [
+        { q: "NKRI adalah singkatan dari ....", o: ["Negara Kedaulatan Republik Indonesia", "Negara Kesatuan Republik Indonesia", "Negara Konfederasi Republik Indonesia", "Negara Komunitas Republik Indonesia", "Negara Kesatuan Rakyat Indonesia"], a: 1 },
+        { q: "Wawasan Nusantara adalah ....", o: ["semboyan negara Indonesia", "dasar hukum negara Indonesia", "cara pandang bangsa Indonesia terhadap diri dan lingkungannya sebagai satu kesatuan", "sistem pemerintahan Indonesia", "bentuk negara bagian Indonesia"], a: 2 },
+        { q: "Sistem pemerintahan yang dianut Indonesia adalah ....", o: ["monarki", "parlementer", "federal", "presidensial", "konfederasi"], a: 3 },
+        { q: "Yang termasuk ancaman terhadap NKRI dari luar adalah ....", o: ["intoleransi antarkelompok", "konflik sosial", "radikalisme", "korupsi", "intervensi asing"], a: 4 },
+        { q: "Pasangan konsep berikut yang paling tepat adalah ....", o: ["Pancasila = dasar nilai; UUD 1945 = dasar hukum; Bhinneka Tunggal Ika = semboyan persatuan; NKRI = bentuk negara", "Pancasila = konstitusi; UUD 1945 = semboyan; Bhinneka Tunggal Ika = bentuk negara; NKRI = dasar hukum", "Pancasila = bentuk negara; UUD 1945 = dasar nilai; Bhinneka Tunggal Ika = dasar hukum; NKRI = semboyan", "Pancasila = sistem pemerintahan; UUD 1945 = dasar negara; Bhinneka Tunggal Ika = hukum adat; NKRI = negara bagian", "Pancasila = aturan daerah; UUD 1945 = lambang negara; Bhinneka Tunggal Ika = asas pemerintahan; NKRI = wilayah udara"], a: 0 },
+        { q: "Indonesia sebagai negara kesatuan berarti ....", o: ["setiap daerah memiliki kedaulatan penuh", "hanya ada satu negara dengan pemerintah pusat sebagai pemegang kekuasaan tertinggi", "terdapat beberapa negara bagian yang berdaulat", "pemerintah daerah lebih tinggi dari pemerintah pusat", "daerah dapat membuat konstitusi sendiri"], a: 1 },
+        { q: "Fungsi NKRI yang paling tepat adalah ....", o: ["mengganti kedudukan Pancasila", "menjadi dasar pembentukan partai politik", "membatasi hak warga negara", "menjaga persatuan dan melindungi wilayah serta rakyat Indonesia", "membentuk negara bagian di daerah"], a: 3 },
+        { q: "Wilayah NKRI mencakup ....", o: ["darat, laut, dan udara", "darat dan laut saja", "laut dan udara saja", "darat dan udara saja", "darat, laut, dan daratan pulau luar saja"], a: 0 },
+        { q: "Pernyataan yang benar tentang negara federal adalah ....", o: ["seluruh wilayah berada di bawah satu pemerintah pusat tanpa pembagian kedaulatan", "daerah tidak memiliki kewenangan apa pun", "terdiri atas beberapa negara bagian yang memiliki kekuasaan tertentu", "hanya memiliki satu kepala negara tetapi tanpa pembagian wewenang", "tidak mengenal pembagian kewenangan pusat dan daerah"], a: 2 },
+        { q: "Yang bukan kedudukan NKRI adalah ....", o: ["bentuk negara Indonesia", "dasar penyatuan seluruh wilayah Indonesia", "wadah seluruh rakyat Indonesia", "dasar keutuhan bangsa Indonesia", "semboyan negara Indonesia"], a: 4 },
+        { q: "Otonomi daerah dalam NKRI berarti ....", o: ["daerah bebas lepas dari pemerintah pusat", "daerah diberi kewenangan mengatur urusannya sendiri dalam bingkai NKRI", "daerah menjadi negara baru", "daerah memiliki kedaulatan penuh", "daerah dapat membuat hubungan luar negeri sendiri"], a: 1 },
+        { q: "Dalam sistem negara Indonesia, kedaulatan berada di tangan ....", o: ["presiden", "DPR", "rakyat", "gubernur", "mahkamah"], a: 2 },
+        { q: "Sikap yang paling tepat untuk menjaga persatuan di sekolah adalah ....", o: ["bekerja sama dengan semua teman tanpa membeda-bedakan suku, agama, atau latar belakang", "memilih teman hanya yang satu daerah", "menghindari kelompok yang berbeda pendapat", "memaksakan kehendak dalam diskusi", "menolak kerja kelompok agar tidak bertengkar"], a: 0 },
+        { q: "Jika suatu daerah ingin memisahkan diri dari Indonesia, hal itu terutama mengancam ....", o: ["ketertiban lalu lintas", "sistem ekonomi pasar", "budaya lokal", "keutuhan wilayah negara", "pembagian tugas sekolah"], a: 3 },
+        { q: "Republik berarti pemerintahan yang ....", o: ["dipimpin raja secara turun-temurun", "dipimpin bangsawan", "berdasarkan kasta", "diwariskan secara keluarga", "berdasarkan kepentingan rakyat, bukan kerajaan"], a: 4 },
+        { q: "Prinsip NKRI yang paling tepat adalah ....", o: ["perbedaan harus dihapus agar seragam", "perbedaan boleh ada, tetapi negara tetap satu", "daerah berhak berdiri sendiri jika berbeda budaya", "kekuasaan harus dibagi sama rata ke negara bagian", "pemerintah pusat tidak boleh mengatur urusan penting"], a: 1 },
+        { q: "Salah satu tujuan negara Indonesia menurut Pembukaan UUD 1945 adalah ....", o: ["memperluas wilayah kekuasaan", "menjadikan Indonesia negara kerajaan", "mencerdaskan kehidupan bangsa", "mengutamakan kepentingan kelompok tertentu", "membentuk pemerintahan daerah yang merdeka"], a: 2 },
+        { q: "Pernyataan yang benar mengenai hubungan NKRI, Pancasila, UUD 1945, dan Bhinneka Tunggal Ika adalah ....", o: ["NKRI adalah bentuk negara, Pancasila dasar nilai, UUD 1945 dasar hukum, dan Bhinneka Tunggal Ika semboyan persatuan", "NKRI adalah dasar hukum, Pancasila adalah bentuk negara, UUD 1945 adalah semboyan, dan Bhinneka Tunggal Ika adalah aturan daerah", "NKRI adalah semboyan persatuan, Pancasila adalah konstitusi, UUD 1945 adalah dasar nilai, dan Bhinneka Tunggal Ika adalah bentuk negara", "NKRI adalah dasar negara, Pancasila adalah pemerintah pusat, UUD 1945 adalah budaya nasional, dan Bhinneka Tunggal Ika adalah wilayah negara", "NKRI adalah konstitusi, Pancasila adalah lambang negara, UUD 1945 adalah ideologi daerah, dan Bhinneka Tunggal Ika adalah sistem pemerintahan"], a: 0 },
+        { q: "Contoh penerapan menjaga keutuhan NKRI di masyarakat adalah ....", o: ["menyebarkan ujaran kebencian", "menolak kerja bakti", "memilih-milih tetangga berdasarkan suku", "menghormati perbedaan dan ikut gotong royong", "menolak aturan lingkungan"], a: 3 },
+        { q: "Yang termasuk ancaman dari dalam terhadap NKRI adalah ....", o: ["serangan militer asing", "tekanan politik luar negeri", "intervensi negara lain", "kejahatan lintas negara", "separatisme"], a: 4 },
+        { q: "Indonesia bukan negara ....", o: ["kesatuan", "federal", "republik", "berdaulat", "kepulauan"], a: 1 },
+        { q: "Ciri negara kesatuan adalah ....", o: ["ada banyak konstitusi", "ada banyak kepala negara", "ada satu pemerintah pusat yang memegang kekuasaan tertinggi", "setiap daerah memiliki kedaulatan penuh", "urusan penting negara diatur oleh negara bagian"], a: 2 },
+        { q: "Bentuk negara yang tepat untuk Indonesia adalah negara kesatuan karena ....", o: ["kekuasaan tertinggi berada pada pemerintah pusat dan daerah hanya diberi otonomi", "terdapat pembagian kedaulatan antara negara bagian", "tiap provinsi menjadi negara merdeka", "ada banyak konstitusi di setiap daerah", "pemerintah daerah lebih tinggi dari pemerintah pusat"], a: 0 },
+        { q: "Tujuan melindungi segenap bangsa dan seluruh tumpah darah Indonesia tercantum dalam ....", o: ["batang tubuh UUD 1945", "sila pertama Pancasila", "Pembukaan UUD 1945 alinea pertama", "Pembukaan UUD 1945 alinea keempat", "Bhinneka Tunggal Ika"], a: 3 },
+        { q: "Cara pandang bangsa Indonesia terhadap diri dan lingkungannya sebagai satu kesatuan disebut ....", o: ["nasionalisme sempit", "Wawasan Nusantara", "otonomi daerah", "federalisme", "desentralisasi mutlak"], a: 1 },
+        { q: "Bahasa yang penting digunakan sebagai bahasa persatuan adalah ....", o: ["bahasa daerah", "bahasa asing", "bahasa diplomasi", "bahasa ilmiah", "bahasa Indonesia"], a: 4 },
+        { q: "Ancaman seperti intoleransi dan radikalisme termasuk ancaman ....", o: ["dari dalam negeri", "dari luar negeri", "ekonomi internasional", "alamiah", "geografis"], a: 0 },
+        { q: "Pernyataan yang paling tepat tentang wilayah udara Indonesia adalah ....", o: ["udara bebas sepenuhnya tanpa kedaulatan negara", "udara hanya berlaku di atas laut teritorial", "udara di atas wilayah darat dan laut Indonesia berada dalam kedaulatan negara", "udara hanya dimiliki oleh pemerintah daerah", "udara tidak termasuk wilayah negara"], a: 2 },
+        { q: "Salah satu contoh sikap cinta tanah air adalah ....", o: ["membanggakan daerah sendiri dan merendahkan daerah lain", "menolak menggunakan bahasa Indonesia", "menyebarkan hoaks tentang bangsa sendiri", "menjaga nama baik bangsa dan negara", "mengabaikan aturan sekolah"], a: 3 },
+        { q: "Yang bukan cara menjaga keutuhan NKRI adalah ....", o: ["menghormati perbedaan", "menyebarkan provokasi", "taat hukum", "memperkuat toleransi", "memakai bahasa Indonesia sebagai bahasa persatuan"], a: 1 },
+        { q: "Indonesia terdiri atas ....", o: ["satu pulau besar", "satu negara bagian", "beberapa kerajaan", "beberapa koloni", "banyak pulau yang berada dalam satu negara"], a: 4 },
+        { q: "Bhinneka Tunggal Ika berfungsi sebagai ....", o: ["semboyan pemersatu bangsa", "dasar hukum pemerintahan", "bentuk negara", "aturan otonomi daerah", "sistem pemilihan umum"], a: 0 },
+        { q: "Urutan pernyataan yang paling tepat adalah ....", o: ["Pancasila = bentuk negara, UUD 1945 = semboyan, NKRI = dasar hukum, Bhinneka Tunggal Ika = dasar nilai", "Pancasila = dasar nilai, UUD 1945 = dasar hukum, Bhinneka Tunggal Ika = semboyan persatuan, NKRI = bentuk negara", "Pancasila = dasar hukum, UUD 1945 = bentuk negara, Bhinneka Tunggal Ika = dasar nilai, NKRI = semboyan", "Pancasila = konstitusi, UUD 1945 = ideologi, Bhinneka Tunggal Ika = wilayah negara, NKRI = pemerintah pusat", "Pancasila = lambang negara, UUD 1945 = budaya, Bhinneka Tunggal Ika = hukum adat, NKRI = negara bagian"], a: 1 },
+        { q: "Negara kesatuan memiliki ....", o: ["beberapa kepala negara", "beberapa konstitusi", "satu pemerintah pusat", "satu negara bagian yang berdaulat", "dua sistem kedaulatan"], a: 2 },
+        { q: "Contoh ancaman sosial yang dapat mengganggu NKRI adalah ....", o: ["gempa bumi", "banjir", "perubahan musim", "konflik antarkelompok", "longsor"], a: 3 },
+        { q: "Salah satu contoh penerapan menjaga persatuan di rumah adalah ....", o: ["saling menghormati anggota keluarga", "memaksakan kehendak sendiri", "membeda-bedakan saudara", "menolak membantu pekerjaan rumah", "membuat keributan"], a: 0 },
+        { q: "Pernyataan yang paling tepat tentang kedaulatan rakyat adalah ....", o: ["kekuasaan tertinggi berada pada pemerintah daerah", "kekuasaan tertinggi berada pada presiden", "rakyat tidak memiliki peran dalam pemerintahan", "kedaulatan hanya dimiliki DPR", "kekuasaan tertinggi ada pada rakyat melalui mekanisme konstitusi"], a: 4 },
+        { q: "NKRI bukan ....", o: ["bentuk negara Indonesia", "dasar negara Indonesia", "negara yang satu dan utuh", "negara berdaulat", "negara kesatuan"], a: 1 },
+        { q: "Hal yang paling tepat untuk melestarikan budaya daerah dan nasional adalah ....", o: ["menghapus budaya daerah", "menolak semua tradisi", "menghargai dan mempelajari budaya daerah tanpa merendahkan budaya lain", "hanya menggunakan budaya asing", "menganggap budaya sendiri paling unggul"], a: 2 },
+        { q: "Contoh urusan yang diatur pemerintah pusat adalah ....", o: ["jadwal piket kelas", "kegiatan ekstrakurikuler sekolah", "pembagian tugas kelompok", "pertahanan dan keamanan negara", "organisasi kelas"], a: 3 },
+        { q: "Indonesia disebut negara kepulauan, sehingga laut menjadi ....", o: ["unsur penting wilayah negara", "wilayah bebas tanpa aturan", "hak milik daerah tertentu", "wilayah yang tidak diakui", "batas yang memisahkan rakyat"], a: 0 },
+        { q: "Pasangan yang tepat antara bentuk negara dan cirinya adalah ....", o: ["Negara kesatuan = beberapa negara bagian berdaulat", "Negara federal = satu negara tanpa pembagian kewenangan", "Negara kesatuan = daerah memiliki kedaulatan penuh", "Negara federal = tidak ada pembagian kekuasaan pusat dan daerah", "Negara kesatuan = satu negara, pemerintah pusat kuat, daerah tidak berdaulat sendiri"], a: 4 },
+        { q: "Memilih wakil rakyat dalam pemilu menunjukkan adanya ....", o: ["monarki", "kedaulatan rakyat", "negara bagian", "intervensi asing", "feodalisme"], a: 1 },
+        { q: "Tujuan negara Indonesia selain melindungi rakyat adalah ....", o: ["memperluas penjajahan", "mengganti sistem republik", "memajukan kesejahteraan umum", "meniadakan kebebasan warga", "membatasi pendidikan"], a: 2 },
+        { q: "Tindakan yang bertentangan dengan persatuan bangsa adalah ....", o: ["gotong royong", "toleransi", "menghormati perbedaan", "menyebarkan ujaran kebencian", "menjaga ketertiban"], a: 3 },
+        { q: "NKRI harus dipahami sebagai satu kesatuan ....", o: ["wilayah, politik, ekonomi, sosial budaya, dan pertahanan keamanan", "wilayah darat saja", "pemerintahan pusat saja", "budaya daerah saja", "ekonomi daerah saja"], a: 0 },
+        { q: "Jika suatu soal menyatakan bahwa Indonesia terdiri atas banyak negara bagian yang masing-masing berdaulat sendiri, maka pernyataan tersebut ....", o: ["benar, karena Indonesia adalah negara federal", "benar, karena NKRI memberi kedaulatan penuh kepada daerah", "benar, karena otonomi daerah sama dengan negara bagian", "benar, karena negara kesatuan memiliki banyak konstitusi", "salah, karena Indonesia adalah negara kesatuan, bukan federal"], a: 4 },
+        { q: "Semboyan yang menjaga NKRI tetap utuh di tengah perbedaan adalah ....", o: ["Satu Nusa Satu Bangsa", "Bhinneka Tunggal Ika", "Tut Wuri Handayani", "Indonesia Raya", "Merdeka atau Mati"], a: 1 },
+        { q: "Otonomi daerah tidak menjadikan daerah sebagai negara sendiri karena ....", o: ["daerah tetap berada dalam bingkai NKRI", "daerah tidak memiliki pemerintahan", "daerah tidak boleh mengatur urusan apa pun", "daerah wajib memiliki tentara sendiri", "daerah bebas membuat konstitusi sendiri"], a: 0 },
+        { q: "Keutuhan wilayah negara berarti ....", o: ["hanya wilayah darat yang dijaga", "hanya ibu kota yang penting", "wilayah laut dapat dipisahkan bila perlu", "seluruh wilayah darat, laut, dan udara tetap menjadi satu kesatuan yang tidak boleh dipisahkan", "setiap daerah berhak menentukan batas negaranya sendiri"], a: 3 }
+    ];
+
+    let currentIdx = 0;
+    let userAnswers = new Array(questions.length).fill(null);
+    let userDoubts = new Array(questions.length).fill(false);
+    let timeLeft = 30 * 60;
+    let timer;
+
+    function startExam() {
+        document.getElementById('intro-screen').style.display = 'none';
+        document.getElementById('exam-screen').style.display = 'flex';
+        renderNav();
+        showQuestion(0);
+        timer = setInterval(updateTimer, 1000);
+    }
+
+    function renderNav() {
+        const grid = document.getElementById('nav-grid');
+        grid.innerHTML = '';
+        questions.forEach((_, i) => {
+            const div = document.createElement('div');
+            div.className = 'nav-num';
+            div.id = `nav-${i}`;
+            div.innerText = i + 1;
+            div.onclick = () => showQuestion(i);
+            grid.appendChild(div);
+        });
+    }
+
+    function showQuestion(idx) {
+        currentIdx = idx;
+        const q = questions[idx];
+        document.getElementById('q-label').innerText = `SOAL NOMOR ${idx + 1}`;
+        document.getElementById('q-text').innerText = q.q;
+        document.getElementById('progress-header').innerText = `Progres: ${idx + 1} / ${questions.length}`;
+
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+        
+        ['A','B','C','D','E'].forEach((label, i) => {
+            const div = document.createElement('div');
+            div.className = `option-item ${userAnswers[idx] === i ? 'selected' : ''}`;
+            div.onclick = () => selectOption(i);
+            div.innerHTML = `<span style="width:30px; font-weight:bold; color:var(--primary);">${label}.</span> <span>${q.o[i]}</span>`;
+            container.appendChild(div);
+        });
+
+        document.getElementById('btn-next').style.display = (idx === questions.length - 1) ? 'none' : 'block';
+        document.getElementById('btn-finish').style.display = (idx === questions.length - 1) ? 'block' : 'none';
+        updateNavStyles();
+    }
+
+    function selectOption(i) {
+        userAnswers[currentIdx] = i;
+        userDoubts[currentIdx] = false;
+        showQuestion(currentIdx);
+    }
+
+    function markDoubt() {
+        userDoubts[currentIdx] = !userDoubts[currentIdx];
+        updateNavStyles();
+    }
+
+    function changeQuestion(dir) {
+        let newIdx = currentIdx + dir;
+        if(newIdx >= 0 && newIdx < questions.length) showQuestion(newIdx);
+    }
+
+    function updateNavStyles() {
+        questions.forEach((_, i) => {
+            const el = document.getElementById(`nav-${i}`);
+            if(!el) return;
+            el.className = 'nav-num';
+            if(userAnswers[i] !== null) el.classList.add('answered');
+            if(userDoubts[i]) el.classList.add('doubt');
+            if(i === currentIdx) el.classList.add('active');
+        });
+    }
+
+    function updateTimer() {
+        timeLeft--;
+        if(timeLeft <= 0) finishExam();
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        document.getElementById('timer').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    }
+
+    function showConfirm() { document.getElementById('modal-overlay').style.display = 'flex'; }
+    function hideConfirm() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+    function finishExam() {
+        clearInterval(timer);
+        hideConfirm();
+        let correct = 0;
+        userAnswers.forEach((ans, i) => { if(ans === questions[i].a) correct++; });
+        let score = correct * 5; // Maksimal 250
+
+        document.getElementById('exam-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('score-text').innerText = score;
+        
+        const status = document.getElementById('status-tag');
+        if(score >= 65) {
+            status.innerText = "LULUS (MS)";
+            status.style.color = "var(--success)";
+        } else {
+            status.innerText = "TIDAK LULUS (TMS)";
+            status.style.color = "var(--danger)";
+        }
+        document.getElementById('stats-detail').innerText = `Benar: ${correct} | Salah: ${questions.length - correct} | Skor: ${score} / 250`;
+    }
+
+    function showReview() {
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('review-screen').style.display = 'block';
+        const container = document.getElementById('review-content');
+        container.innerHTML = '';
+        const labels = ['A','B','C','D','E'];
+
+        questions.forEach((q, i) => {
+            const isCorrect = userAnswers[i] === q.a;
+            const div = document.createElement('div');
+            div.className = 'review-card';
+            div.style.borderColor = isCorrect ? 'var(--success)' : 'var(--danger)';
+            div.innerHTML = `
+                <p><strong>Soal ${i+1}:</strong> ${q.q}</p>
+                <p style="margin-top:10px;">Jawaban Anda: <span style="color:${isCorrect ? 'green' : 'red'}; font-weight:bold;">${userAnswers[i] !== null ? labels[userAnswers[i]] + '. ' + q.o[userAnswers[i]] : 'KOSONG'}</span></p>
+                <p>Kunci Jawaban: <strong style="color:green">${labels[q.a]}. ${q.o[q.a]}</strong></p>
+            `;
+            container.appendChild(div);
+        });
+    }
+</script>
+
+</body>
+</html>
